@@ -48,7 +48,7 @@ class Session():
         """
         if username and password:
             self.session = requests.Session()
-            self.dashboard_soup = self.login(username, password)
+            self.bs4_soup = self.login(username, password)
 
     def login(self, username, password):
         """
@@ -107,7 +107,7 @@ class Session():
         """
         Extract courses items
         """
-        a_tags = self.dashboard_soup.find_all('a', class_='il_ContainerItemTitle')
+        a_tags = self.bs4_soup.find_all('a', class_='il_ContainerItemTitle')
         return [self.format_tag(a_tag) for a_tag in a_tags]
     
 

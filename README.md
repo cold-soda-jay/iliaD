@@ -1,6 +1,6 @@
 # ILIAD
 
-A simple ilias downloader written with python. It helps you to download files on ilias to your computer. 
+A simple and easy ilias downloader written with python. It helps you to download files on ilias to your computer.
 
 <div align=""><img src="pic/titlr.png" alt="Image" style="zoom:70%;" /></div>
 </br>
@@ -71,3 +71,30 @@ or
 ``iliaD course``
 
 Use command ``user`` to check and edit the user name, target directory and password. Use command ``course`` to check and edit marked courses.
+
+
+## Commands
+
+|Command | Usage |
+|:-:|:-:|
+| ``init`` |Init user config with name and target folder |
+|``sync`` |Synchronize all marked Ilias files |
+|``user`` | Print or change user data|
+|``course`` |Print or change marked courses |
+
+
+## Automatic daliy synchronize
+
+If you have a raspberry pi or any Unix computer, you can do the following instructions to synchronize the ilias folder with your cloud storage.
+
+1. Download the [iliaD](https://github.com/cold-soda-jay/iliaD) .
+2. Download [rclone](https://rclone.org/) .
+3. Bind rclone with your cloud storage.
+4. Initiate the iliaD, set the target directory (e.g. ``/home/pi/Onedrive/SS20/``)
+5. Open crontab: with ``crontab -e`` in terminal
+6. Add following instructions:
+    1. ``00 05 * * * /path/of/iliaD sync >> /path/of/iliaD.log 2>&1``
+    2. ``30 05 * * * rclone -v copy path/of/target/directory/ path_of_cloud >> path/of/rclone.log 2>&1``
+
+With the seetings, your raspberry pi will synchronize the ilias folder, download new files at 5:00 am. and upload them in your cloud storage at 5:30 am.
+
