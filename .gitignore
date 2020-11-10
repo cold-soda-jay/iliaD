@@ -6,3 +6,9 @@ build/iliaD/
 iliaD.spec
 
 dist/
+
+.idea/
+
+src/build/iliaD/
+
+virtual/

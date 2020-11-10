@@ -31,9 +31,10 @@ class Session():
         path of Json file which contains user marked courses
 
     """
+
     target_directory = '../data/'
-    path_of_data = 'data.csv'
-    path_of_course = 'course.json'
+    path_of_data = os.path.expanduser('~')+'/data.csv'
+    path_of_course = os.path.expanduser('~')+'/course.json'
 
     def __init__(self, username=None, password=None):
         """
@@ -73,14 +74,16 @@ class Session():
         response = self.session.post(
             "https://ilias.studium.kit.edu/Shibboleth.sso/Login",
             data=payload)
+        #print(response)
+        #print(response.url)
+        #soup = bs4.BeautifulSoup(response.text, 'html.parser')
+        #form = soup.find('form', attrs={'class': 'form2', 'method': 'post'})
+        #action = form['action']
 
-        soup = bs4.BeautifulSoup(response.text, 'html.parser')
-        form = soup.find('form', attrs={'class': 'form2', 'method': 'post'})
-        action = form['action']
 
         # parse and login
         credentials = {"_eventId_proceed": "", "j_username": username, "j_password": password}
-        url = "https://idp.scc.kit.edu" + action
+        url = response.url#"https://idp.scc.kit.edu" + action
 
         response = self.session.post(url, data=credentials)
 
@@ -123,6 +126,46 @@ class Session():
 
         return {"name": a_tag.contents[0], "href": href}
 
+    def get_id(self, soup):
+        rtoken = soup.select('#mm_search_form')[0]['action']
+        rt = re.findall(r"rtoken=.*\&",rtoken)[0][7:-1]
+        id_list = [rt]
+        row_list = soup.find_all('div', class_='ilCLI ilObjListRow row')
+        for row in row_list:
+            info = row.select("div.ilContainerListItemOuter >div > div.il_ContainerListItem > div > h4 >a")[0]
+            try:
+                if info['target'] == '_top':
+                    continue
+            except:
+                pass
+            try:
+                # only download file und folder
+                url = info['href']
+                if '_download' in url:
+                    id_temp = re.findall(r"file_.*_download",url)[0][5:-9]
+                else:
+                    id_temp = re.findall(r"ref_id=.*&cmd=view",url)[0][7:-9]
+                id_list.append(id_temp)
+            except:
+                continue
+        return id_list
+
+
+    def download_zip(self,course,id_list):
+        pay_load={}
+        domain = re.findall(r"http.*&cmdClass=ilrepositorygui",course)[0]
+        url = domain + "&type=webr&cmd=post&cmdNode=ug:jv&baseClass=ilrepositorygui&rtoken=" + id_list[0]
+
+        pay_load["id[]"] = id_list[1:]
+        pay_load["bl_cb_2"] = "1"
+        pay_load["cmd[download]"] = "Herunterladen"
+        response = self.session.request(method='post',
+            url=url,
+            data=pay_load)
+        return response
+
+
+
     def download(self, courses, target=None):
         """
         Download all marked courses and save them into target directory
@@ -145,15 +188,18 @@ class Session():
         new_file_list = ''
         print('Downloading...')
         part = 1 / len(courses)
+
         for course in courses:
             print('\r',
                   '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
                       30 - int(percent * 30)),
-                  end=' ]', flush=True)
+                  end=' ] Downloading {%s}'%course['name'], flush=True)
             link = course["href"]
             course_name = course['name']
-            if '/' in course_name:
+            if '/'in course_name or ':' in course_name :
                 course_name = course_name.replace('/', '&&')
+                course_name = course_name.replace(':', '&&')
+
 
             try:
                 os.mkdir(self.target_directory + course_name)
@@ -162,44 +208,35 @@ class Session():
             new_file_list+='\n# %s\n'%course_name
             html = self.session.get(link).text
             soup = bs4.BeautifulSoup(html, 'html.parser')
-            ziplist = soup.find_all('span', class_='xsmall')
-            if len(ziplist) == 0:
+            id_list = self.get_id(soup)
+            if len(id_list) == 1:
+                percent += part
                 continue
-            subpart = 1 / len(ziplist)
-            for item in ziplist:
+            response = self.download_zip(link,id_list)
+            with open(self.target_directory + course_name + '/cache.zip', 'wb') as f:
+                f.write(response.content)
+            try:
+                with zipfile.ZipFile(self.target_directory + course_name + '/cache.zip', 'r') as z:
+                    zippart = 1 / len(z.namelist())
+                    cache_folder = ''
+                    for file_name in z.namelist():
+                        if os.path.isfile(self.target_directory + course_name + '/' + file_name):
+                            continue
+                        z.extract(file_name, self.target_directory + course_name)
+                        if file_name.endswith('/') and file_name.count('/') == 1:
+                            new_file_list += '%s~ %s\n' % (4 * ' ', file_name)
+                            cache_folder = file_name
+                        else:
+                            new_file_list += '%s- %s\n' % (8 * ' ', file_name.replace(cache_folder, ''))
+            except zipfile.BadZipFile:
                 print('\r',
-                      '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
-                          30 - int(percent * 30)),
-                      end=' ]', flush=True)
+                  '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
+                      30 - int(percent * 30)),
+                  end=' ] No document found in course: %s'%course_name,, flush=True)
 
-                if item.text == 'Download':
-                    zipurl = item.parent.attrs['href']
-                    download_cache = self.session.get("https://ilias.studium.kit.edu/" + zipurl)
-                    with open(self.target_directory + course_name + '/cache.zip', 'wb') as f:
-                        f.write(download_cache.content)
+            percent += part
+            os.remove(self.target_directory + course_name + '/cache.zip')
 
-                    with zipfile.ZipFile(self.target_directory + course_name + '/cache.zip', 'r') as z:
-                        zippart = 1 / len(z.namelist())
-                        cache_folder=''
-                        for file_name in z.namelist():
-                            print('\r',
-                                  '[ ' + '#' * int(percent * 30) +
-                                  '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
-                                      30 - int(percent * 30)),
-                                  end=' ]', flush=True)
-                            if os.path.isfile(self.target_directory + course_name+'/'+file_name):
-                                continue
-                            z.extract(file_name, self.target_directory + course_name)
-                            if file_name.endswith('/') and file_name.count('/')==1:
-                                new_file_list+='%s~ %s\n'%(4*' ', file_name)
-                                cache_folder=file_name
-                            else:
-                                new_file_list+='%s- %s\n'%(8*' ', file_name.replace(cache_folder,''))
-
-                            percent += part * subpart * zippart
-                    os.remove(self.target_directory + course_name + '/cache.zip')
-                else:
-                    percent += part * subpart
         percent = 1
         print('\r',
               '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
@@ -208,7 +245,7 @@ class Session():
         print('\nDone!')
         return new_file_list
 
-    def get_marked_course_list(self, choose=False):
+    def get_marked_course_list(self):
         """
         Get marked courses from course.json. If the file not exist, then choose the course.
 
@@ -216,9 +253,9 @@ class Session():
         -------
         marked_course:list
         """
-        if choose:
-            marked_course = self.choose_course()
-            return marked_course
+        # if choose:
+        #     marked_course = self.choose_course()
+        #     return marked_course
         try:
             with open(self.path_of_course, "r") as file:
                 marked_course = json.loads(file.read())
@@ -275,7 +312,7 @@ class Synchronizer:
     """
     A synchronizer which allows user to login ,download, check user data
     """
-    path_of_data = 'data.csv'
+    path_of_data = os.path.expanduser('~')+'/data.csv'
 
     def init_login_data(self, user=None, target=None, password=False):
         """
@@ -283,7 +320,7 @@ class Synchronizer:
         """
         if password:
             pwd = getpass.getpass("Please give password(Pw won't show in Terminal): ")
-            self.write_user_data('pwd',pwd)
+            self.write_user_data('pwd',cy.enCode(pwd))
             return None
         if not user:
             user = input('Please give username (U-Account):\n')
@@ -293,6 +330,8 @@ class Synchronizer:
         if not target:
             target = input('Please give target directory:\n')
             if user == 'ch':
+                if not (target.endswith('\\') or target.endswith('/')):
+                    target += '/'
                 self.write_user_data('target', target)
                 return None
 
@@ -345,7 +384,7 @@ class Synchronizer:
             session = Session(username=user, password=pwd)
             return session, target
         except:
-            print('No Data!')
+            print('Error!')
             print('Please initialize user configuration at first!!\n')
             return None
 
@@ -414,11 +453,11 @@ class Synchronizer:
             return None
 
     def show_marked_course(self):
-        try:
-            session, target = self.login()
-        except:
-            return
-        clist=session.get_marked_course_list(choose=False)
+        #try:
+        session= Session()
+        # except:
+        #     return
+        clist=session.get_marked_course_list()
         out='\nChoosed courses:\n'
         if clist is None:
             return
