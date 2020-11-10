@@ -232,7 +232,7 @@ class Session():
                 print('\r',
                   '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
                       30 - int(percent * 30)),
-                  end=' ] No document found in course: %s'%course_name,, flush=True)
+                  end=' ] No document found in course: %s'%course_name, flush=True)
 
             percent += part
             os.remove(self.target_directory + course_name + '/cache.zip')
