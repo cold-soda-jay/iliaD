@@ -245,7 +245,7 @@ class Session():
         print('\nDone!')
         return new_file_list
 
-    def get_marked_course_list(self):
+    def get_marked_course_list(self,read=False):
         """
         Get marked courses from course.json. If the file not exist, then choose the course.
 
@@ -253,15 +253,18 @@ class Session():
         -------
         marked_course:list
         """
-        # if choose:
+        if read:
         #     marked_course = self.choose_course()
         #     return marked_course
-        try:
-            with open(self.path_of_course, "r") as file:
-                marked_course = json.loads(file.read())
-            return marked_course
-        except:
-            print('No Marked Course!')
+            try:
+                with open(self.path_of_course, "r") as file:
+                    marked_course = json.loads(file.read())
+                return marked_course
+            except:
+                print('No Marked Course!')
+                marked_course = self.choose_course()
+                return marked_course
+        else:
             marked_course = self.choose_course()
             return marked_course
 
@@ -356,7 +359,7 @@ class Synchronizer:
             return
         
         print('%s: Login succeed!'%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        courslist = session.get_marked_course_list()
+        courslist = session.get_marked_course_list(read=True)
         print('%s: Checking courses...'%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         new_file_list = session.download(courslist,target)
         print('Time coast:%.2f\n%s: New files:'%((time.time()-startt),
@@ -454,10 +457,14 @@ class Synchronizer:
 
     def show_marked_course(self):
         #try:
-        session= Session()
         # except:
         #     return
-        clist=session.get_marked_course_list()
+        try:
+            with open(self.path_of_course, "r") as file:
+                clist = json.loads(file.read())
+        except:
+            session, target= self.login()
+            clist=session.get_marked_course_list()
         out='\nChoosed courses:\n'
         if clist is None:
             return
