@@ -132,7 +132,11 @@ class Session():
         id_list = [rt]
         row_list = soup.find_all('div', class_='ilCLI ilObjListRow row')
         for row in row_list:
-            info = row.select("div.ilContainerListItemOuter >div > div.il_ContainerListItem > div > h4 >a")[0]
+            try:
+                info = row.select("div.ilContainerListItemOuter >div > div.il_ContainerListItem > div > h4 >a")[0]
+            except IndexError:
+                continue
+
             try:
                 if info['target'] == '_top':
                     continue
