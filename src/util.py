@@ -320,6 +320,7 @@ class Synchronizer:
     A synchronizer which allows user to login ,download, check user data
     """
     path_of_data = os.path.expanduser('~')+'/data.csv'
+    path_of_course = os.path.expanduser('~')+'/course.json'
 
     def init_login_data(self, user=None, target=None, password=False):
         """
