@@ -74,20 +74,16 @@ class Session():
         response = self.session.post(
             "https://ilias.studium.kit.edu/Shibboleth.sso/Login",
             data=payload)
-        #print(response)
-        #print(response.url)
-        #soup = bs4.BeautifulSoup(response.text, 'html.parser')
-        #form = soup.find('form', attrs={'class': 'form2', 'method': 'post'})
-        #action = form['action']
 
+        shibo = bs4.BeautifulSoup(response.text, 'html.parser')
+        csrf = shibo.find('input', attrs={'name':'csrf_token'}).attrs['value']
 
         # parse and login
-        credentials = {"_eventId_proceed": "", "j_username": username, "j_password": password}
-        url = response.url#"https://idp.scc.kit.edu" + action
+        credentials = {"_eventId_proceed": "", "j_username": username, "j_password": password, "csrf_token": csrf}
+        url = response.url
+        ilias_response = self.session.post(url, data=credentials)
 
-        response = self.session.post(url, data=credentials)
-
-        html_doc = response.text
+        html_doc = ilias_response.text
 
         soup = bs4.BeautifulSoup(html_doc, 'html.parser')
         relay_state = soup.find('input', attrs={'name': 'RelayState'})
@@ -286,6 +282,7 @@ class Session():
         t.add_rows(table)
         dialog=True
         print(t.draw())
+        marked = []
         while dialog:
             confirm=True
             marked = []
