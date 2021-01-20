@@ -12,3 +12,8 @@ dist/
 src/build/iliaD/
 
 virtual/
+
+iliaD.egg-info/
+
+iliaD/build/
+

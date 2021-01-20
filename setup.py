@@ -15,8 +15,8 @@ from setuptools import find_packages, setup, Command
 NAME = 'iliaD'
 DESCRIPTION = 'A simple ilias downloader.'
 URL = 'https://github.com/cold-soda-jay/iliaD'
-EMAIL = 'kimiwakamino@gmail.com'
-AUTHOR = 'cold-soda-jay'
+EMAIL = 'linukaszkr@gmail.com'
+AUTHOR = 'Joe'
 REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '1.0'
 
@@ -94,7 +94,7 @@ class UploadCommand(Command):
 
 # Where the magic happens:
 setup(
-    name=NAME,
+    name='iliaD-cold-soda-jay',
     version=about['__version__'],
     description=DESCRIPTION,
     long_description=long_description,
@@ -108,7 +108,7 @@ setup(
     # py_modules=['mypackage'],
 
     entry_points={
-         'console_scripts': ['iliaD=src.iliaD:main'],
+         'console_scripts': ['iliaD = iliaD.iliaD:main'],
      },
     install_requires=REQUIRED,
     extras_require=EXTRAS,
@@ -117,7 +117,7 @@ setup(
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: OSI Approved :: GPL License',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
