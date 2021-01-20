@@ -3,7 +3,7 @@
 A simple and easy ilias downloader written with python. It helps you to download files on ilias to your computer.
 
 
-![Title](pic/title.png)
+![Title](https://github.com/cold-soda-jay/iliaD/blob/master/pic/title.png?raw=true)
 
 > **Important:** The project is now only support Ilias platform of ***Karlsruhe Institut für Technologie***.
 
