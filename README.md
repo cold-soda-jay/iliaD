@@ -2,42 +2,36 @@
 
 A simple and easy ilias downloader written with python. It helps you to download files on ilias to your computer.
 
-<div align=""><img src="pic/titlr.png" alt="Image" style="zoom:70%;" /></div>
-</br>
 
-> **<font color="red">Important:</font>** The project is now only support Ilias platform of ***Karlsruhe Institut für Technologie***.
+![Title](pic/title.png)
+
+> **Important:** The project is now only support Ilias platform of ***Karlsruhe Institut für Technologie***.
 
 
 ## Install 
 
-You can download the built file or download the source code.
+```
+$ pip install iliaDownloader
+
+$ iliaD
+```
 
 
 </br>
 
-<font size='4'>**&diams; <u>Requirement if using source code**</font></u>
+**&diams; Requirement if using source code**
 
 ```python
-altgraph==0.17
 beautifulsoup4==4.9.0
 bs4==0.0.1
-certifi==2020.4.5.1
-chardet==3.0.4
-future==0.18.2
-idna==2.9
-pefile==2019.4.18
-PyInstaller==3.6
-pywin32-ctypes==0.2.0
 requests==2.23.0
-soupsieve==2.0
-texttable==1.6.2
 urllib3==1.25.9
 ```
 ## Usage
 
 </br>
 
-<font size='4'>**&diams; <u>Initiate**</font></u>
+**&diams; Initiate**
 
 ``iliaD init`` 
 
@@ -54,7 +48,7 @@ After user data initiated, you can use command ``course`` to choose courses to b
 
 </br>
 
-<font size='4'>**&diams; <u>Synchronize**</font></u>
+**&diams; Synchronize**
 
 ``iliaD sync``
 
@@ -62,7 +56,7 @@ Use command ``sync`` you can synchronize new files. The exist file will not be c
 
 </br>
 
-<font size='4'>**&diams; <u>Check user data and edit**</font></u>
+**&diams; Check user data and edit**
 
 ``iliaD user``
 
@@ -93,7 +87,7 @@ If you have a raspberry pi or any Unix computer, you can do the following instru
 4. Initiate the iliaD, set the target directory (e.g. ``/home/pi/Onedrive/SS20/``)
 5. Open crontab: with ``crontab -e`` in terminal
 6. Add following instructions:
-    1. ``00 05 * * * /path/of/iliaD sync >> /path/of/iliaD.log 2>&1``
+    1. ``00 05 * * * iliaD sync >> /path/of/iliaD.log 2>&1``
     2. ``30 05 * * * rclone -v copy path/of/target/directory/ path_of_cloud >> path/of/rclone.log 2>&1``
 
 With the seetings, your raspberry pi will synchronize the ilias folder, download new files at 5:00 am. and upload them in your cloud storage at 5:30 am.

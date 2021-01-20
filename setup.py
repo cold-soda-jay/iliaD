@@ -12,13 +12,13 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'iliasDownload'
+NAME = 'iliaDownloader'
 DESCRIPTION = 'A simple ilias downloader.'
 URL = 'https://github.com/cold-soda-jay/iliaD'
 EMAIL = 'linukaszkr@gmail.com'
 AUTHOR = 'Joe'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
