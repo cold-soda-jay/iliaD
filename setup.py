@@ -12,7 +12,7 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'iliaD'
+NAME = 'iliasDownload'
 DESCRIPTION = 'A simple ilias downloader.'
 URL = 'https://github.com/cold-soda-jay/iliaD'
 EMAIL = 'linukaszkr@gmail.com'
@@ -94,7 +94,7 @@ class UploadCommand(Command):
 
 # Where the magic happens:
 setup(
-    name='iliaD-cold-soda-jay',
+    name=NAME,
     version=about['__version__'],
     description=DESCRIPTION,
     long_description=long_description,
@@ -103,7 +103,7 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    packages=find_packages(),
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
