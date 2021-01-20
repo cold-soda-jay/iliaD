@@ -14,7 +14,7 @@ import csv
 import json
 import bs4
 import requests
-import cypter as cy
+import iliaD.cypter as cy
 
 from texttable import Texttable
 

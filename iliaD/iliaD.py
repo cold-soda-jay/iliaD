@@ -5,8 +5,8 @@ Created by cold-soda-jay
 """
 import sys
 import argparse
-import util as ut
-from pictures import *
+import iliaD.util as ut
+from iliaD.pictures import *
 
 
 def init_userdata(args):
