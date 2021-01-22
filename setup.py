@@ -18,11 +18,11 @@ URL = 'https://github.com/cold-soda-jay/iliaD'
 EMAIL = 'linukaszkr@gmail.com'
 AUTHOR = 'Joe'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '1.0.4'
+VERSION = '1.0.5'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
- 'beautifulsoup4', 'bs4', 'urllib3', 'requests'
+ 'beautifulsoup4', 'bs4', 'urllib3', 'requests', 'texttable', 'soupsieve'
 ]
 
 # What packages are optional?

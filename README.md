@@ -26,6 +26,8 @@ beautifulsoup4==4.9.0
 bs4==0.0.1
 requests==2.23.0
 urllib3==1.25.9
+soupsieve==2.0
+texttable==1.6.2
 ```
 ## Usage
 
