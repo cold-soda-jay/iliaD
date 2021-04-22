@@ -17,3 +17,9 @@ iliaD.egg-info/
 
 iliaD/build/
 
+
+build/
+
+iliaDownloader.egg-info/
+
+venv/

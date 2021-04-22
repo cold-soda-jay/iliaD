@@ -15,8 +15,11 @@ import json
 import bs4
 import requests
 import iliaD.cypter as cy
+import filetype
+
 
 from texttable import Texttable
+
 
 class Session():
     """Session to login to ilias and download files.
@@ -35,6 +38,8 @@ class Session():
     target_directory = '../data/'
     path_of_data = os.path.expanduser('~')+'/data.csv'
     path_of_course = os.path.expanduser('~')+'/course.json'
+    new_file_list = ""
+    percent = 0
 
     def __init__(self, username=None, password=None):
         """
@@ -123,48 +128,100 @@ class Session():
         return {"name": a_tag.contents[0], "href": href}
 
     def get_id(self, soup):
+        """
+        Get all avaliable ids
+        :param soup:
+        :return:
+        """
         rtoken = soup.select('#mm_search_form')[0]['action']
         rt = re.findall(r"rtoken=.*\&",rtoken)[0][7:-1]
-        id_list = [rt]
+        id_list = [["token",rt]]
         row_list = soup.find_all('div', class_='ilCLI ilObjListRow row')
         for row in row_list:
             try:
                 info = row.select("div.ilContainerListItemOuter >div > div.il_ContainerListItem > div > h4 >a")[0]
-            except IndexError:
-                continue
-
-            try:
-                if info['target'] == '_top':
-                    continue
-            except:
-                pass
-            try:
-                # only download file und folder
                 url = info['href']
                 if '_download' in url:
-                    id_temp = re.findall(r"file_.*_download",url)[0][5:-9]
+                        id_temp = re.findall(r"file_.*_download",url)[0][5:-9]
                 else:
-                    id_temp = re.findall(r"ref_id=.*&cmd=view",url)[0][7:-9]
-                id_list.append(id_temp)
-            except:
+                        id_temp = re.findall(r"ref_id=.*&cmd=view",url)[0][7:-9]
+                id_list.append([info.text, id_temp])
+            except Exception :
                 continue
+            # try:
+            #     if info['target'] == '_top':
+            #         continue
+            # except:
+            #     pass
+            #
+            # try:
+            #     # only download file und folder
+            #     url = info['href']
+            #     if '_download' in url:
+            #         id_temp = re.findall(r"file_.*_download",url)[0][5:-9]
+            #     else:
+            #         id_temp = re.findall(r"ref_id=.*&cmd=view",url)[0][7:-9]
+            #     id_list.append(id_temp)
+            # except:
+            #     continue
         return id_list
 
-
-    def download_zip(self,course,id_list):
+    def download_zip(self,course,course_name,id_list,cmd,part):
         pay_load={}
         domain = re.findall(r"http.*&cmdClass=ilrepositorygui",course)[0]
-        url = domain + "&type=webr&cmd=post&cmdNode=ug:jv&baseClass=ilrepositorygui&rtoken=" + id_list[0]
+        url = domain + "&cmd=post"+cmd+"&rtoken=" + id_list[0][1]
+        course_path = self.target_directory + course_name + "/"
+        course_part = part/len(id_list[1:])
+        for id in id_list[1:]:
+            try:
+                pay_load["id[]"] = id[1]
+                pay_load["cmd[download]"] = "Herunterladen"
+                response = self.session.request(method='post',
+                    url=url,
+                    data=pay_load)
+                extension = filetype.guess(response.content).EXTENSION
 
-        pay_load["id[]"] = id_list[1:]
-        pay_load["bl_cb_2"] = "1"
-        pay_load["cmd[download]"] = "Herunterladen"
-        response = self.session.request(method='post',
-            url=url,
-            data=pay_load)
-        return response
+                file_path = course_path + id[0]+"."+extension
+                with open(file_path, 'wb') as f:
+                    f.write(response.content)
+                if extension == "zip":
+                    self.extract_file(file_path, course_path, course_part,course_name)
+                    os.remove(file_path)
+                else:
+                    self.percent += course_part
+                    print('\r',
+                          '[ ' + '#' * int(self.percent * 30) + '>' + '%.2f'%(self.percent * 100) + '%' + ' ' * (
+                              30 - int(self.percent * 30)),
+                          end=' ] Downloading {%s}'%course_name, flush=True)
+            except:
+                self.percent += course_part
+                print('\r',
+                          '[ ' + '#' * int(self.percent * 30) + '>' + '%.2f'%(self.percent * 100) + '%' + ' ' * (
+                              30 - int(self.percent * 30)),
+                          end=' ] Downloading {%s}'%course_name, flush=True)
+                continue
 
-
+    def extract_file(self,path, course_path, course_part,course_name):
+        try:
+            with zipfile.ZipFile(path, 'r') as z:
+                zippart = course_part / len(z.namelist())
+                cache_folder = ''
+                for file_name in z.namelist():
+                    if os.path.isfile(path[:-4] + '/' + file_name):
+                        continue
+                    z.extract(file_name,course_path)#, path[:-4]
+                    if file_name.endswith('/') and file_name.count('/') == 1:
+                        self.new_file_list += '%s~ %s\n' % (4 * ' ', file_name)
+                        cache_folder = file_name
+                    else:
+                        self.new_file_list += '%s- %s\n' % (8 * ' ', file_name.replace(cache_folder, ''))
+                    self.percent += zippart
+                    print('\r',
+                              '[ ' + '#' * int(self.percent * 30) + '>' + '%.2f'%(self.percent * 100) + '%' + ' ' * (
+                                  30 - int(self.percent * 30)),
+                              end=' ] Downloading {%s}'%course_name, flush=True)
+        except zipfile.BadZipFile:
+            print('Wrong Zip file: %s'%path)
 
     def download(self, courses, target=None):
         """
@@ -184,15 +241,17 @@ class Session():
         """
         if target:
             self.target_directory = target
-        percent = 0
-        new_file_list = ''
+        if self.target_directory[-1] not in ['/','\\']:
+            self.target_directory += '/'
+        self.percent = 0
+        self.new_file_list = ''
         print('Downloading...')
         part = 1 / len(courses)
 
         for course in courses:
             print('\r',
-                  '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
-                      30 - int(percent * 30)),
+                  '[ ' + '#' * int(self.percent * 30) + '>' + '%.2f'%(self.percent * 100) + '%' + ' ' * (
+                      30 - int(self.percent * 30)),
                   end=' ] Downloading {%s}'%course['name'], flush=True)
             link = course["href"]
             course_name = course['name']
@@ -200,50 +259,29 @@ class Session():
                 course_name = course_name.replace('/', '&&')
                 course_name = course_name.replace(':', '&&')
 
-
             try:
                 os.mkdir(self.target_directory + course_name)
             except:
                 pass
-            new_file_list+='\n# %s\n'%course_name
+            self.new_file_list+='\n# %s\n'%course_name
             html = self.session.get(link).text
             soup = bs4.BeautifulSoup(html, 'html.parser')
+            dropdown = soup.find_all("div",{"id": "tttt"})[0].find_all("ul", {"class": "dropdown-menu pull-right"})[0]
+            cmd_tmp = dropdown.select("li>a")[1]['href']
+            cmd = re.findall("&cmdNode.*",cmd_tmp)[0]
             id_list = self.get_id(soup)
             if len(id_list) == 1:
-                percent += part
+                self.percent += part
                 continue
-            response = self.download_zip(link,id_list)
-            with open(self.target_directory + course_name + '/cache.zip', 'wb') as f:
-                f.write(response.content)
-            try:
-                with zipfile.ZipFile(self.target_directory + course_name + '/cache.zip', 'r') as z:
-                    zippart = 1 / len(z.namelist())
-                    cache_folder = ''
-                    for file_name in z.namelist():
-                        if os.path.isfile(self.target_directory + course_name + '/' + file_name):
-                            continue
-                        z.extract(file_name, self.target_directory + course_name)
-                        if file_name.endswith('/') and file_name.count('/') == 1:
-                            new_file_list += '%s~ %s\n' % (4 * ' ', file_name)
-                            cache_folder = file_name
-                        else:
-                            new_file_list += '%s- %s\n' % (8 * ' ', file_name.replace(cache_folder, ''))
-            except zipfile.BadZipFile:
-                print('\r',
-                  '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
-                      30 - int(percent * 30)),
-                  end=' ] No document found in course: %s'%course_name, flush=True)
+            self.download_zip(link,course_name,id_list,cmd,part)
 
-            percent += part
-            os.remove(self.target_directory + course_name + '/cache.zip')
-
-        percent = 1
+        self.percent = 1
         print('\r',
-              '[ ' + '#' * int(percent * 30) + '>' + '%.2f'%(percent * 100) + '%' + ' ' * (
-                  30 - int(percent * 30)),
+              '[ ' + '#' * int(self.percent * 30) + '>' + '%.2f'%(self.percent * 100) + '%' + ' ' * (
+                  30 - int(self.percent * 30)),
               end=' ]', flush=True)
         print('\nDone!')
-        return new_file_list
+        return self.new_file_list
 
     def get_marked_course_list(self,read=False):
         """
