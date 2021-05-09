@@ -79,7 +79,7 @@ Use command ``user`` to check and edit the user name, target directory and passw
 |``course`` |Print or change marked courses |
 
 
-## Automatic daliy synchronize
+## Automatic daily synchronize
 
 If you have a raspberry pi or any Unix computer, you can do the following instructions to synchronize the ilias folder with your cloud storage.
 
